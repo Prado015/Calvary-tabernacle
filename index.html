@@ -239,6 +239,24 @@ body{font-family:'Nunito',sans-serif;background:var(--navy);color:var(--cream);m
 .food-banner .fbl{font-size:10.5px;font-family:'JetBrains Mono',monospace;color:var(--gold-light);text-transform:uppercase;letter-spacing:.08em;}
 .food-banner .fbv{font-family:'Playfair Display',serif;font-size:38px;font-weight:900;color:var(--gold-light);letter-spacing:-.03em;line-height:1;}
 .food-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(201,146,42,0.1);}
+/* FOOD INVENTORY CARDS */
+.food-inv-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px;}
+@media(max-width:600px){.food-inv-row{grid-template-columns:1fr;}}
+.food-inv-card{border-radius:14px;padding:18px 20px;backdrop-filter:blur(16px);position:relative;overflow:hidden;}
+.food-inv-card.adult{background:linear-gradient(135deg,rgba(59,130,246,0.15),rgba(59,130,246,0.06));border:1px solid rgba(59,130,246,0.3);}
+.food-inv-card.child{background:linear-gradient(135deg,rgba(34,197,94,0.15),rgba(34,197,94,0.06));border:1px solid rgba(34,197,94,0.3);}
+.inv-label{font-size:9.5px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;}
+.food-inv-card.adult .inv-label{color:var(--blue);}
+.food-inv-card.child .inv-label{color:var(--green);}
+.inv-value{font-family:'Playfair Display',serif;font-size:clamp(36px,6vw,52px);font-weight:900;line-height:1;letter-spacing:-.03em;}
+.food-inv-card.adult .inv-value{color:#93c5fd;}
+.food-inv-card.child .inv-value{color:#86efac;}
+.inv-sub{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:4px;margin-bottom:10px;}
+.inv-bar-bg{background:rgba(255,255,255,0.08);border-radius:5px;height:6px;overflow:hidden;}
+.inv-bar-fill{height:100%;border-radius:5px;transition:width .5s ease;}
+.adult-fill{background:linear-gradient(90deg,#3b82f6,#93c5fd);}
+.child-fill{background:linear-gradient(90deg,#22c55e,#86efac);}
+.inv-pct{position:absolute;top:16px;right:18px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:800;opacity:.6;}
 .food-item:last-child{border-bottom:none;}
 .food-item-l{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:7px;}
 .food-icon{font-size:16px;}
@@ -465,7 +483,7 @@ body{font-family:'Nunito',sans-serif;background:var(--navy);color:var(--cream);m
       <span class="ni"><i class="fas fa-qrcode"></i></span> QR Check-in
     </div>
     <div class="nav-item" onclick="showPage('food')" id="ni-food">
-      <span class="ni"><i class="fas fa-utensils"></i></span> Food Planning
+      <span class="ni"><i class="fas fa-box-open"></i></span> Food Distribution
     </div>
     <div class="nav-item" onclick="showPage('analytics')" id="ni-analytics">
       <span class="ni"><i class="fas fa-chart-bar"></i></span> Analytics
@@ -608,32 +626,61 @@ body{font-family:'Nunito',sans-serif;background:var(--navy);color:var(--cream);m
 
     <!-- ═ PAGE: FOOD ═ -->
     <div class="page" id="page-food">
-      <div class="page-header"><div><div class="page-title">Food <span>Planning</span></div><div class="page-sub">Estimates based on attendance</div></div></div>
-      <div class="food-banner">
-        <div><div class="fbl">Total Attendees</div><div style="font-size:10.5px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:3px" id="foodBreakdown">—</div></div>
-        <div style="text-align:right"><div class="fbl">Meals Needed</div><div class="fbv" id="foodMealsTotal">0</div></div>
+      <div class="page-header">
+        <div><div class="page-title">Food <span>Distribution</span></div><div class="page-sub">Track meal pack inventory — updated after every distribution</div></div>
+        <button class="btn-danger" onclick="resetFoodInventory()"><i class="fas fa-rotate-left"></i> Reset Inventory</button>
       </div>
+
+      <!-- Inventory Cards -->
+      <div class="food-inv-row">
+        <div class="food-inv-card adult">
+          <div class="inv-pct" id="adultPct">100%</div>
+          <div class="inv-label">👨 Adult Meal Packs Remaining</div>
+          <div class="inv-value" id="adultPacksRemaining">1000</div>
+          <div class="inv-sub">of 1,000 initial packs · <span id="adultDistributed">0</span> distributed</div>
+          <div class="inv-bar-bg"><div class="inv-bar-fill adult-fill" id="adultBarFill" style="width:100%"></div></div>
+        </div>
+        <div class="food-inv-card child">
+          <div class="inv-pct" id="childPct">100%</div>
+          <div class="inv-label">👦 Children Meal Packs Remaining</div>
+          <div class="inv-value" id="childPacksRemaining">200</div>
+          <div class="inv-sub">of 200 initial packs · <span id="childDistributed">0</span> distributed</div>
+          <div class="inv-bar-bg"><div class="inv-bar-fill child-fill" id="childBarFill" style="width:100%"></div></div>
+        </div>
+      </div>
+
+      <!-- Distribution Form + Summary -->
       <div class="food-grid">
         <div class="glass-card">
-          <h3 style="color:var(--gold-light)">👥 Attendance Input</h3>
+          <h3 style="color:var(--gold-light)">📦 Record Distribution</h3>
           <div class="ig"><label>Event Name</label><input type="text" id="eventName" value="Anniversary" oninput="updateEventLabel()"></div>
-          <div class="ig"><label>Members</label><input type="number" id="foodMembers" value="0" min="0" oninput="updateFood()"></div>
-          <div class="ig"><label>Visitors</label><input type="number" id="foodVisitors" value="0" min="0" oninput="updateFood()"></div>
-          <div class="ig"><label>Children</label><input type="number" id="foodChildren" value="0" min="0" oninput="updateFood()"></div>
-          <div style="margin-top:12px;padding:11px;background:var(--navy-light);border-radius:8px;font-size:10.5px;color:var(--muted);font-family:'JetBrains Mono',monospace;">
-            💡 Sync from seat map or counter:
-            <div style="display:flex;gap:7px;margin-top:8px;">
-              <button class="btn-gold" style="flex:1;font-size:10px" onclick="syncFromSeats()">From Seats</button>
-              <button class="btn-outline" style="flex:1;font-size:10px" onclick="syncFromCounter()">From Counter</button>
-            </div>
-          </div>
+          <div class="ig"><label>Recipient / Section / Delegation</label><input type="text" id="distRecipient" placeholder="e.g. Cruz Church / Baguio Row 1"></div>
+          <div class="ig"><label>Adult Packs to Give Out</label><input type="number" id="distAdult" value="0" min="0"></div>
+          <div class="ig"><label>Children Packs to Give Out</label><input type="number" id="distChild" value="0" min="0"></div>
+          <button class="btn-gold" style="width:100%;margin-top:6px;padding:11px" onclick="recordDistribution()">
+            <i class="fas fa-box-open"></i>&nbsp; Distribute Packs
+          </button>
         </div>
         <div class="glass-card">
-          <h3 style="color:var(--green)">🍱 Prediction Results</h3>
-          <div class="food-item"><div class="food-item-l"><span class="food-icon">🍽️</span>Total Meals</div><div><div class="food-val" id="foodMeals">0</div><div class="food-unit">plates</div></div></div>
-          <div class="food-item"><div class="food-item-l"><span class="food-icon">🍚</span>Rice</div><div><div class="food-val" id="foodRice">0.0</div><div class="food-unit">kg</div></div></div>
-          <div class="food-item"><div class="food-item-l"><span class="food-icon">🥤</span>Drinks</div><div><div class="food-val" id="foodDrinks">0.0</div><div class="food-unit">liters</div></div></div>
-          <div class="food-item"><div class="food-item-l"><span class="food-icon">➕</span>Buffer (+10%)</div><div><div class="food-val" id="foodBuffer">0</div><div class="food-unit">plates</div></div></div>
+          <h3 style="color:var(--green)">📊 Distribution Summary</h3>
+          <div class="food-item"><div class="food-item-l"><span class="food-icon">👨</span>Adult Packs Given</div><div><div class="food-val" id="adultGiven">0</div><div class="food-unit">packs</div></div></div>
+          <div class="food-item"><div class="food-item-l"><span class="food-icon">👦</span>Children Packs Given</div><div><div class="food-val" id="childGiven">0</div><div class="food-unit">packs</div></div></div>
+          <div class="food-item"><div class="food-item-l"><span class="food-icon">📋</span>Distribution Entries</div><div><div class="food-val" id="totalDistributions">0</div><div class="food-unit">entries</div></div></div>
+          <div class="food-item" style="border-bottom:none"><div class="food-item-l"><span class="food-icon">📦</span>Total Packs Left</div><div><div class="food-val" id="totalPacksLeft">1200</div><div class="food-unit">packs</div></div></div>
+        </div>
+      </div>
+
+      <!-- Distribution Log -->
+      <div class="log-wrap" style="margin-top:16px;">
+        <div class="log-head">
+          <h3>📋 Distribution Log — All Entries</h3>
+          <button class="btn-danger" onclick="clearDistLog()" style="font-size:10px;padding:6px 12px"><i class="fas fa-trash"></i> Clear Log</button>
+        </div>
+        <div style="overflow-x:auto;max-height:360px;overflow-y:auto;">
+          <table class="log-table">
+            <thead><tr><th>#</th><th>Time</th><th>Recipient</th><th>Adult Packs</th><th>Children Packs</th><th>Adults Left</th><th>Children Left</th></tr></thead>
+            <tbody id="distLogBody"></tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -674,6 +721,13 @@ body{font-family:'Nunito',sans-serif;background:var(--navy);color:var(--cream);m
           <button class="exp-btn pdf" onclick="exportLogPDF()"><div class="ebicon">📕</div>Log → PDF</button>
         </div>
         <div class="rep-card">
+          <span class="rep-icon">🍱</span>
+          <h3>Food Distribution</h3>
+          <p>Full distribution log with adult & children pack counts, running balance, and inventory summary.</p>
+          <button class="exp-btn excel" onclick="exportFoodExcel()"><div class="ebicon">📗</div>Food Dist. → Excel</button>
+          <button class="exp-btn pdf" onclick="exportFoodPDF()"><div class="ebicon">📕</div>Food Dist. → PDF</button>
+        </div>
+        <div class="rep-card">
           <span class="rep-icon">🗄️</span>
           <h3>Data Backup</h3>
           <p>Full JSON snapshot of all seat and counter data. Import to restore a previous session.</p>
@@ -708,7 +762,7 @@ body{font-family:'Nunito',sans-serif;background:var(--navy);color:var(--cream);m
   <div class="mnav-item" onclick="showPage('map')" id="mni-map"><span class="mni">🗺️</span>Map</div>
   <div class="mnav-item" onclick="showPage('sections')" id="mni-sections"><span class="mni">🪑</span>Sections</div>
   <div class="mnav-item" onclick="showPage('qr')" id="mni-qr"><span class="mni">📷</span>QR</div>
-  <div class="mnav-item" onclick="showPage('food')" id="mni-food"><span class="mni">🍱</span>Food</div>
+  <div class="mnav-item" onclick="showPage('food')" id="mni-food"><span class="mni">🍱</span>Food Dist.</div>
   <div class="mnav-item" onclick="showPage('reports')" id="mni-reports"><span class="mni">📁</span>Reports</div>
 </nav>
 
@@ -769,7 +823,7 @@ const SECTIONS_INIT = [
   {id:'baguio-1',     name:'Baguio Church (Row 1)',         capacity:80 },
   {id:'baguio-2',     name:'Baguio Church (Row 2)',         capacity:80 },
   {id:'baguio-3',     name:'Baguio Church (Row 3)',         capacity:80 },
-  {id:'open-churches',name:'Open for Other Churches',      capacity:80 },
+  {id:'baguio-4',     name:'Baguio Church (Row 4)',         capacity:80 },
   {id:'bot-left-40',  name:'Unnamed Bottom Left (40 cap)', capacity:40 },
   {id:'km4',          name:'KM4 ACF / Taba-Ao / Sagubo',   capacity:104},
   {id:'manaoag',      name:'Manaoag/San Tayug/S.Fernando',  capacity:80 },
@@ -786,7 +840,7 @@ const MAP_POS={
   'baguio-1':    {x:'48%',  y:'38%',  w:'22%',  h:'9%'   },
   'baguio-2':    {x:'48%',  y:'48%',  w:'22%',  h:'9%'   },
   'baguio-3':    {x:'48%',  y:'57.5%',w:'22%',  h:'9%'   },
-  'open-churches':{x:'48%', y:'67%',  w:'22%',  h:'8.5%' },
+  'baguio-4':    {x:'48%',  y:'67%',  w:'22%',  h:'8.5%' },
   'bot-left-40': {x:'32.5%',y:'73.5%',w:'5.5%', h:'14%'  },
   'km4':         {x:'46%',  y:'73.5%',w:'14%',  h:'14%'  },
   'manaoag':     {x:'60.5%',y:'73.5%',w:'12%',  h:'14%'  },
@@ -986,21 +1040,101 @@ function renderLogTable(){
 
 function clearLog(){if(!confirm('Clear log?'))return;seatLog=[];saveLog();renderLogTable();toast('🗑️ Log cleared','info');}
 
-/* ═══ FOOD ═══ */
-function updateFood(){
-  const m=parseInt(document.getElementById('foodMembers')?.value)||0;
-  const v=parseInt(document.getElementById('foodVisitors')?.value)||0;
-  const c=parseInt(document.getElementById('foodChildren')?.value)||0;
-  const t=m+v+c;
-  document.getElementById('foodMealsTotal').textContent=t;
-  document.getElementById('foodMeals').textContent=t;
-  document.getElementById('foodRice').textContent=(t*.25).toFixed(1);
-  document.getElementById('foodDrinks').textContent=(t*.4).toFixed(1);
-  document.getElementById('foodBuffer').textContent=Math.ceil(t*.1);
-  document.getElementById('foodBreakdown').textContent=`${m} members · ${v} visitors · ${c} children`;
+/* ═══ FOOD DISTRIBUTION ═══ */
+const LS_FOOD = 'ctc_food_dist_v1';
+const ADULT_INITIAL = 1000;
+const CHILD_INITIAL = 200;
+
+function loadFoodState(){
+  try{const r=localStorage.getItem(LS_FOOD);if(r)return JSON.parse(r);}catch(e){}
+  return{adultLeft:ADULT_INITIAL,childLeft:CHILD_INITIAL,log:[]};
 }
-function syncFromSeats(){let occ=0;SECTIONS_INIT.forEach(s=>{occ+=(seats[s.id]?.occupied||0);});const m=Math.floor(occ*.6),v=Math.floor(occ*.3),c=occ-m-v;document.getElementById('foodMembers').value=m;document.getElementById('foodVisitors').value=v;document.getElementById('foodChildren').value=c;updateFood();toast('🔄 Synced from seat map','info');}
-function syncFromCounter(){const d=loadCounter();document.getElementById('foodMembers').value=d.members;document.getElementById('foodVisitors').value=d.visitors;document.getElementById('foodChildren').value=d.children;updateFood();toast('🔄 Synced from counter','info');}
+function saveFoodState(state){try{localStorage.setItem(LS_FOOD,JSON.stringify(state));}catch(e){}}
+
+function updateFoodUI(){
+  const state=loadFoodState();
+  const adultPct=Math.round((state.adultLeft/ADULT_INITIAL)*100);
+  const childPct=Math.round((state.childLeft/CHILD_INITIAL)*100);
+  const adultGiven=ADULT_INITIAL-state.adultLeft;
+  const childGiven=CHILD_INITIAL-state.childLeft;
+
+  setEl('adultPacksRemaining',state.adultLeft.toLocaleString());
+  setEl('childPacksRemaining',state.childLeft.toLocaleString());
+  setEl('adultPct',adultPct+'%');
+  setEl('childPct',childPct+'%');
+  setEl('adultDistributed',adultGiven.toLocaleString());
+  setEl('childDistributed',childGiven.toLocaleString());
+  setEl('adultGiven',adultGiven.toLocaleString());
+  setEl('childGiven',childGiven.toLocaleString());
+  setEl('totalDistributions',state.log.length);
+  setEl('totalPacksLeft',(state.adultLeft+state.childLeft).toLocaleString());
+
+  const ab=document.getElementById('adultBarFill');if(ab)ab.style.width=adultPct+'%';
+  const cb=document.getElementById('childBarFill');if(cb)cb.style.width=childPct+'%';
+
+  renderDistLog(state.log);
+}
+
+function recordDistribution(){
+  const recipient=(document.getElementById('distRecipient')?.value||'').trim()||'Unnamed';
+  const adult=parseInt(document.getElementById('distAdult')?.value)||0;
+  const child=parseInt(document.getElementById('distChild')?.value)||0;
+  if(adult===0&&child===0){toast('⚠️ Enter at least 1 pack to distribute','error');return;}
+  const state=loadFoodState();
+  if(adult>state.adultLeft){toast(`⚠️ Only ${state.adultLeft} adult packs left!`,'error');return;}
+  if(child>state.childLeft){toast(`⚠️ Only ${state.childLeft} children packs left!`,'error');return;}
+  state.adultLeft-=adult;
+  state.childLeft-=child;
+  state.log.unshift({
+    t:new Date().toLocaleTimeString('en-PH',{hour12:false}),
+    ts:Date.now(),
+    recipient,
+    adult,
+    child,
+    adultLeft:state.adultLeft,
+    childLeft:state.childLeft
+  });
+  saveFoodState(state);
+  updateFoodUI();
+  if(document.getElementById('distAdult'))document.getElementById('distAdult').value=0;
+  if(document.getElementById('distChild'))document.getElementById('distChild').value=0;
+  if(document.getElementById('distRecipient'))document.getElementById('distRecipient').value='';
+  toast(`✅ Gave ${adult} adult + ${child} children packs → ${recipient}`,'success');
+}
+
+function renderDistLog(log){
+  const tb=document.getElementById('distLogBody');if(!tb)return;
+  if(!log.length){tb.innerHTML='<tr><td colspan="7" class="log-empty">No distributions recorded yet.</td></tr>';return;}
+  tb.innerHTML=log.map((e,i)=>`<tr>
+    <td style="color:var(--muted)">${log.length-i}</td>
+    <td>${e.t}</td>
+    <td>${e.recipient}</td>
+    <td class="tadd" style="font-weight:800">+${e.adult}</td>
+    <td class="tadd" style="font-weight:800">+${e.child}</td>
+    <td style="font-weight:800;color:var(--blue)">${e.adultLeft}</td>
+    <td style="font-weight:800;color:var(--green)">${e.childLeft}</td>
+  </tr>`).join('');
+}
+
+function clearDistLog(){
+  if(!confirm('Clear distribution log? Inventory will stay at current levels.'))return;
+  const state=loadFoodState();
+  state.log=[];
+  saveFoodState(state);
+  updateFoodUI();
+  toast('🗑️ Distribution log cleared','info');
+}
+
+function resetFoodInventory(){
+  if(!confirm('Reset food inventory back to 1,000 adult packs and 200 children packs?'))return;
+  saveFoodState({adultLeft:ADULT_INITIAL,childLeft:CHILD_INITIAL,log:[]});
+  updateFoodUI();
+  toast('🔄 Food inventory reset to full','info');
+}
+
+function syncFromSeats(){let occ=0;SECTIONS_INIT.forEach(s=>{occ+=(seats[s.id]?.occupied||0);});toast('ℹ️ Sync from seats is used for attendance tracking only','info');}
+function syncFromCounter(){toast('ℹ️ Sync from counter is used for attendance tracking only','info');}
+function updateFood(){updateFoodUI();}
 function updateEventLabel(){const n=document.getElementById('eventName')?.value||'Anniversary';document.getElementById('eventNameDisplay').textContent=n;document.getElementById('headerEventLabel').textContent=n+' · Command Center';}
 
 /* ═══ FIREBASE ═══ */
@@ -1203,6 +1337,83 @@ function exportLogPDF(){
   doc.save('activity-log-'+nowISO()+'.pdf');toast('Log PDF exported!','success');
 }
 
+function exportFoodExcel(){
+  const state=loadFoodState();
+  const en=getEventName();const now=new Date();
+  const dateStr=now.toLocaleDateString('en-PH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const adultGiven=ADULT_INITIAL-state.adultLeft;
+  const childGiven=CHILD_INITIAL-state.childLeft;
+  const totalInitial=ADULT_INITIAL+CHILD_INITIAL;
+  const totalLeft=state.adultLeft+state.childLeft;
+  const totalGiven=adultGiven+childGiven;
+  const rows=[
+    ['CALVARY TABERNACLE — FOOD DISTRIBUTION REPORT'],
+    ['Event:',en],['Date:',dateStr],['Generated:',nowStr()],[],
+    ['INVENTORY SUMMARY'],
+    ['Category','Initial Stock','Distributed','Remaining','% Remaining'],
+    ['Adult Meal Packs',ADULT_INITIAL,adultGiven,state.adultLeft,Math.round((state.adultLeft/ADULT_INITIAL)*100)+'%'],
+    ['Children Meal Packs',CHILD_INITIAL,childGiven,state.childLeft,Math.round((state.childLeft/CHILD_INITIAL)*100)+'%'],
+    ['TOTAL',totalInitial,totalGiven,totalLeft,Math.round((totalLeft/totalInitial)*100)+'%'],[],
+    ['DISTRIBUTION LOG'],
+    ['#','Time','Recipient / Section','Adult Packs Given','Children Packs Given','Adults Remaining','Children Remaining'],
+  ];
+  if(state.log.length){state.log.forEach((e,i)=>{rows.push([i+1,e.t,e.recipient,e.adult,e.child,e.adultLeft,e.childLeft]);});}
+  else{rows.push(['—','—','No distributions recorded','—','—','—','—']);}
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:6},{wch:12},{wch:36},{wch:18},{wch:20},{wch:18},{wch:20}];
+  ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:6}}];
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Food Distribution');
+  XLSX.writeFile(wb,'food-distribution-'+nowISO()+'.xlsx');
+  toast('📗 Food Distribution Excel exported!','success');
+}
+
+function exportFoodPDF(){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  const state=loadFoodState();
+  const en=getEventName();const now=new Date();
+  const dateStr=now.toLocaleDateString('en-PH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const adultGiven=ADULT_INITIAL-state.adultLeft;
+  const childGiven=CHILD_INITIAL-state.childLeft;
+  buildLetterhead(doc,297,210,'FOOD DISTRIBUTION REPORT',en+' - '+dateStr);
+  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(60,60,60);
+  doc.text('Date: '+dateStr,14,52);
+  doc.text('Total distribution entries: '+state.log.length,14,58);
+  doc.setDrawColor(0,56,117);doc.setFillColor(240,246,255);
+  doc.roundedRect(14,62,269,24,2,2,'FD');
+  var cols=[
+    {lbl:'ADULT PACKS REMAINING',val:state.adultLeft+' / '+ADULT_INITIAL,x:14},
+    {lbl:'ADULT DISTRIBUTED',val:String(adultGiven),x:82},
+    {lbl:'CHILDREN PACKS REMAINING',val:state.childLeft+' / '+CHILD_INITIAL,x:160},
+    {lbl:'CHILDREN DISTRIBUTED',val:String(childGiven),x:228}
+  ];
+  cols.forEach(function(c){
+    doc.setFont('helvetica','bold');doc.setFontSize(6.5);doc.setTextColor(0,56,117);doc.text(c.lbl,c.x,69);
+    doc.setFontSize(12);doc.text(String(c.val),c.x,79);
+  });
+  doc.autoTable({
+    startY:92,
+    head:[['#','Time','Recipient / Section','Adult Given','Children Given','Adults Left','Children Left']],
+    body:state.log.length?state.log.map(function(e,i){return[i+1,e.t,e.recipient,e.adult,e.child,e.adultLeft,e.childLeft];}):
+      [['—','—','No distributions recorded yet','—','—','—','—']],
+    foot:state.log.length?[['','','TOTALS',adultGiven,childGiven,state.adultLeft+' left',state.childLeft+' left']]:undefined,
+    styles:{font:'helvetica',fontSize:8.5,cellPadding:3,textColor:[30,30,30],fillColor:[255,255,255],lineColor:[200,215,235],lineWidth:0.3},
+    headStyles:{fillColor:[0,56,117],textColor:[255,255,255],fontStyle:'bold',fontSize:8.5},
+    footStyles:{fillColor:[0,56,117],textColor:[255,255,255],fontStyle:'bold',fontSize:8.5},
+    alternateRowStyles:{fillColor:[245,249,255]},
+    columnStyles:{0:{cellWidth:10},1:{cellWidth:22},2:{cellWidth:100},3:{cellWidth:26},4:{cellWidth:28},5:{cellWidth:26},6:{cellWidth:28}},
+    margin:{left:14,right:14}
+  });
+  const ph=doc.internal.pageSize.height;const sigY=ph-34;
+  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(40,40,40);
+  doc.text('Prepared by:',14,sigY);doc.line(14,sigY+14,110,sigY+14);
+  doc.setFontSize(8.5);doc.text('Signature over Printed Name',14,sigY+19);
+  doc.text('Noted by:',160,sigY);doc.line(160,sigY+14,280,sigY+14);
+  doc.setFontSize(8.5);doc.text('Rev. Eugene C. Banez Jr. / Pastor',160,sigY+19);
+  doc.save('food-distribution-'+nowISO()+'.pdf');
+  toast('📕 Food Distribution PDF exported!','success');
+}
+
 
 
 function exportJSON(){
@@ -1271,7 +1482,7 @@ window.addEventListener('resize',checkMobile);
 document.addEventListener('DOMContentLoaded',()=>{
   initSeats();loadLog();loadLogo();
   renderMap();renderStats();renderSections();renderQR();renderAnalytics();renderLogTable();
-  renderCounter(loadCounter());updateDateBadge();updateFood();updateEventLabel();
+  renderCounter(loadCounter());updateDateBadge();updateFoodUI();updateEventLabel();
   checkMobile();tryAutoFb();
   document.getElementById('qrSimInput')?.addEventListener('keydown',e=>{if(e.key==='Enter')simulateScan();});
 });
